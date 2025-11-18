@@ -3,95 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>点击+自动爱心动画</title>
+    <title>酷炫爱心矩阵</title>
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
+        }
+        body {
             width: 100vw;
             height: 100vh;
-            background-color: #000;
             overflow: hidden;
-            cursor: pointer; /* 鼠标指针变手型，提示可点击 */
+            cursor: pointer;
+            /* 动态渐变背景 */
+            background: linear-gradient(135deg, #ff6b6b, #ffda79, #63d471, #00b8d9, #805ad5);
+            background-size: 300% 300%;
+            animation: gradientBG 15s ease infinite;
         }
-        #heartContainer {
+        #container {
+            position: relative;
             width: 100%;
             height: 100%;
-            position: relative;
+        }
+        /* 爱心基础样式 */
+        .heart {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            transform: rotate(45deg);
+            animation: float 6s ease-in-out infinite;
+        }
+        .heart::before, .heart::after {
+            content: '';
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+        }
+        .heart::before {
+            top: -7.5px;
+            left: 0;
+        }
+        .heart::after {
+            top: 0;
+            left: -7.5px;
+        }
+        /* 背景渐变动画 */
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
     </style>
 </head>
 <body>
-    <div id="heartContainer"></div>
+    <div id="container"></div>
 
     <script>
-        // 优化：将样式一次性添加到头部，避免重复创建style标签
-        const style = document.createElement('style');
-        style.textContent = `
-            #heartContainer div::before, #heartContainer div::after {
-                content: '';
-                position: absolute;
-                width: 20px;
-                height: 20px;
-                background-color: #ff4d6d;
-                border-radius: 50%;
-            }
-            #heartContainer div::before {
-                top: -10px;
-                left: 0;
-            }
-            #heartContainer div::after {
-                top: 0;
-                left: -10px;
-            }
-            @keyframes float {
-                0% {
-                    opacity: 1;
-                    transform: rotate(45deg) scale(1);
-                }
-                100% {
-                    opacity: 0;
-                    transform: rotate(45deg) scale(2) translateY(-100px);
-                }
-            }
-        `;
-        document.head.appendChild(style);
+        const container = document.getElementById('container');
+        const W = window.innerWidth;
+        const H = window.innerHeight;
+        // 大爱心的中心位置（屏幕中心）
+        const centerX = W / 2;
+        const centerY = H / 2;
+        // 大爱心的大小（根据屏幕适配）
+        const bigHeartSize = Math.min(W, H) * 0.4;
 
-        // 创建爱心函数（新增x、y参数，支持指定位置）
-        function createHeart(x = null, y = null) {
-            const heart = document.createElement('div');
-            heart.style.cssText = `
-                position: absolute;
-                width: 20px;
-                height: 20px;
-                background-color: #ff4d6d;
-                transform: rotate(45deg);
-                animation: float 3s ease-in-out forwards;
-            `;
-
-            // 有传入坐标则用点击位置，无则用随机位置
-            const posX = x !== null ? x - 10 : Math.random() * window.innerWidth;
-            const posY = y !== null ? y - 10 : Math.random() * window.innerHeight;
-            heart.style.left = `${posX}px`;
-            heart.style.top = `${posY}px`;
-
-            document.getElementById('heartContainer').appendChild(heart);
-            setTimeout(() => heart.remove(), 3000);
+        // 生成随机彩虹色（HSL色彩模式，保证鲜艳度）
+        function getRandomColor() {
+            const hue = Math.floor(Math.random() * 360); // 0-360色相（彩虹色）
+            return `hsl(${hue}, 90%, 60%)`;
         }
 
-        // 页面加载自动生成爱心（原功能保留）
-        window.onload = () => {
-            const interval = setInterval(createHeart, 300);
-            setTimeout(() => clearInterval(interval), 5000);
-        };
+        // 爱心参数方程（生成大爱心的点集）
+        function getHeartPoints() {
+            const points = [];
+            // 用极坐标生成大爱心轮廓点（密度控制精度）
+            for (let t = 0; t < Math.PI * 2; t += 0.02) {
+                // 爱心极坐标方程：r = a(1 + sinθ)
+                const r = bigHeartSize * (1 + Math.sin(t));
+                // 转换为直角坐标
+                const x = centerX + r * Math.cos(t);
+                const y = centerY + r * Math.sin(t);
+                points.push({x, y});
+            }
+            return points;
+        }
 
-        // 新增：点击屏幕生成爱心
-        document.getElementById('heartContainer').addEventListener('click', (e) => {
-            // 获取点击位置的坐标（适配手机触摸）
-            const clickX = e.clientX || e.touches[0].clientX;
-            const clickY = e.clientY || e.touches[0].clientY;
-            createHeart(clickX, clickY); // 在点击位置生成爱心
+        // 创建小爱心
+        function createHeart(x, y, delay = 0, size = 1) {
+            const heart = document.createElement('div');
+            heart.className = 'heart';
+            const color = getRandomColor();
+            heart.style.backgroundColor = color;
+            heart.style.setProperty('--before-bg', color);
+            heart.style.setProperty('--after-bg', color);
+            heart.style.left = `${x}px`;
+            heart.style.top = `${y}px`;
+            heart.style.width = `${15 * size}px`;
+            heart.style.height = `${15 * size}px`;
+            // 随机动画延迟和时长，制造层次感
+            heart.style.animationDelay = `${delay}s`;
+            heart.style.animationDuration = `${3 + Math.random() * 4}s`;
+            
+            container.appendChild(heart);
+
+            // 随机方向的漂浮动画（覆盖默认动画）
+            const animName = `float-${Math.random().toString(36).substr(2, 5)}`;
+            const keyframes = `
+                @keyframes ${animName} {
+                    0% {
+                        transform: rotate(45deg) translate(0, 0) scale(${size});
+                        opacity: 0.8;
+                    }
+                    25% {
+                        transform: rotate(45deg) translate(${Math.random() * 40 - 20}px, ${Math.random() * 40 - 20}px) scale(${size * 1.2});
+                        opacity: 1;
+                    }
+                    50% {
+                        transform: rotate(45deg) translate(${Math.random() * 80 - 40}px, ${Math.random() * 80 - 40}px) scale(${size});
+                        opacity: 0.9;
+                    }
+                    75% {
+                        transform: rotate(45deg) translate(${Math.random() * 60 - 30}px, ${Math.random() * 60 - 30}px) scale(${size * 0.8});
+                        opacity: 0.7;
+                    }
+                    100% {
+                        transform: rotate(45deg) translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px) scale(${size * 0.5});
+                        opacity: 0;
+                    }
+                }
+            `;
+            const style = document.createElement('style');
+            style.textContent = keyframes;
+            document.head.appendChild(style);
+            heart.style.animation = `${animName} ${3 + Math.random() * 4}s ease-in-out infinite`;
+
+            // 自动移除避免内存占用
+            setTimeout(() => heart.remove(), 8000);
+        }
+
+        // 初始化大爱心（由多个小爱心组成）
+        function initBigHeart() {
+            const points = getHeartPoints();
+            // 从轮廓点生成小爱心，制造填充效果
+            points.forEach((point, index) => {
+                // 延迟生成，形成流动感
+                setTimeout(() => {
+                    createHeart(
+                        point.x, 
+                        point.y, 
+                        index * 0.02, // 递增延迟
+                        0.8 + Math.random() * 0.6 // 随机大小
+                    );
+                }, index * 20);
+            });
+
+            // 循环再生，保持动画持续
+            setInterval(() => {
+                points.forEach((point, index) => {
+                    setTimeout(() => {
+                        createHeart(
+                            point.x, 
+                            point.y, 
+                            index * 0.02,
+                            0.8 + Math.random() * 0.6
+                        );
+                    }, index * 20);
+                });
+            }, 7000);
+        }
+
+        // 点击屏幕爆发爱心
+        container.addEventListener('click', (e) => {
+            const x = e.clientX || e.touches[0].clientX;
+            const y = e.clientY || e.touches[0].clientY;
+            // 一次点击生成20个爱心
+            for (let i = 0; i < 20; i++) {
+                createHeart(
+                    x + (Math.random() * 100 - 50),
+                    y + (Math.random() * 100 - 50),
+                    i * 0.05,
+                    0.5 + Math.random() * 1
+                );
+            }
         });
+
+        // 页面加载后启动
+        window.onload = initBigHeart;
+
+        // 适配屏幕旋转
+        window.onresize = () => {
+            location.reload(); // 刷新页面重新适配
+        };
     </script>
 </body>
 </html>
