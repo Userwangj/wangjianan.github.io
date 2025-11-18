@@ -2,20 +2,18 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- 适配手机屏幕 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>爱心动画</title>
+    <title>点击+自动爱心动画</title>
     <style>
-        /* 全屏背景，隐藏滚动条 */
         body {
             margin: 0;
             padding: 0;
             width: 100vw;
             height: 100vh;
-            background-color: #000; /* 黑色背景，突出爱心 */
+            background-color: #000;
             overflow: hidden;
+            cursor: pointer; /* 鼠标指针变手型，提示可点击 */
         }
-        /* 爱心容器 */
         #heartContainer {
             width: 100%;
             height: 100%;
@@ -27,73 +25,73 @@
     <div id="heartContainer"></div>
 
     <script>
-        // 创建爱心元素的函数
-        function createHeart() {
+        // 优化：将样式一次性添加到头部，避免重复创建style标签
+        const style = document.createElement('style');
+        style.textContent = `
+            #heartContainer div::before, #heartContainer div::after {
+                content: '';
+                position: absolute;
+                width: 20px;
+                height: 20px;
+                background-color: #ff4d6d;
+                border-radius: 50%;
+            }
+            #heartContainer div::before {
+                top: -10px;
+                left: 0;
+            }
+            #heartContainer div::after {
+                top: 0;
+                left: -10px;
+            }
+            @keyframes float {
+                0% {
+                    opacity: 1;
+                    transform: rotate(45deg) scale(1);
+                }
+                100% {
+                    opacity: 0;
+                    transform: rotate(45deg) scale(2) translateY(-100px);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 创建爱心函数（新增x、y参数，支持指定位置）
+        function createHeart(x = null, y = null) {
             const heart = document.createElement('div');
-            
-            // 用CSS绘制爱心（通过伪元素实现）
             heart.style.cssText = `
                 position: absolute;
                 width: 20px;
                 height: 20px;
-                background-color: #ff4d6d; /* 粉色爱心 */
+                background-color: #ff4d6d;
                 transform: rotate(45deg);
                 animation: float 3s ease-in-out forwards;
             `;
-            // 添加伪元素样式（构成爱心的上半部分）
-            const style = document.createElement('style');
-            style.textContent = `
-                #heartContainer div::before, #heartContainer div::after {
-                    content: '';
-                    position: absolute;
-                    width: 20px;
-                    height: 20px;
-                    background-color: #ff4d6d;
-                    border-radius: 50%;
-                }
-                #heartContainer div::before {
-                    top: -10px;
-                    left: 0;
-                }
-                #heartContainer div::after {
-                    top: 0;
-                    left: -10px;
-                }
-                /* 爱心漂浮动画 */
-                @keyframes float {
-                    0% {
-                        opacity: 1;
-                        transform: rotate(45deg) scale(1);
-                    }
-                    100% {
-                        opacity: 0;
-                        transform: rotate(45deg) scale(2) translateY(-100px);
-                    }
-                }
-            `;
-            document.head.appendChild(style);
 
-            // 随机位置（在屏幕内）
-            const x = Math.random() * window.innerWidth;
-            const y = Math.random() * window.innerHeight;
-            heart.style.left = `${x}px`;
-            heart.style.top = `${y}px`;
+            // 有传入坐标则用点击位置，无则用随机位置
+            const posX = x !== null ? x - 10 : Math.random() * window.innerWidth;
+            const posY = y !== null ? y - 10 : Math.random() * window.innerHeight;
+            heart.style.left = `${posX}px`;
+            heart.style.top = `${posY}px`;
 
-            // 添加到容器
             document.getElementById('heartContainer').appendChild(heart);
-
-            // 动画结束后移除元素，避免占用内存
-            setTimeout(() => {
-                heart.remove();
-            }, 3000);
+            setTimeout(() => heart.remove(), 3000);
         }
 
-        // 页面加载后，连续生成爱心（每秒3个）
+        // 页面加载自动生成爱心（原功能保留）
         window.onload = () => {
             const interval = setInterval(createHeart, 300);
-            // 5秒后停止生成（可调整时长）
             setTimeout(() => clearInterval(interval), 5000);
         };
+
+        // 新增：点击屏幕生成爱心
+        document.getElementById('heartContainer').addEventListener('click', (e) => {
+            // 获取点击位置的坐标（适配手机触摸）
+            const clickX = e.clientX || e.touches[0].clientX;
+            const clickY = e.clientY || e.touches[0].clientY;
+            createHeart(clickX, clickY); // 在点击位置生成爱心
+        });
     </script>
 </body>
 </html>
